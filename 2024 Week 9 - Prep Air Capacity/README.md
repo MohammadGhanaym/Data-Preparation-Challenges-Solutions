@@ -574,8 +574,20 @@ customers_recent.head()
 
 
 ```python
-customers_recent = customers_recent.merge(right=flight_details, on=['Flight Number', 'Class', 'Flight Date'], how='left')
-customers_recent.head()
+flight_details.duplicated().sum()
+```
+
+
+
+
+    0
+
+
+
+
+```python
+final_df = flight_details.merge(right=customers_recent, on=['Flight Number', 'Class', 'Flight Date'], how='left')
+final_df.head()
 ```
 
 
@@ -600,82 +612,82 @@ customers_recent.head()
     <tr style="text-align: right;">
       <th></th>
       <th>Flight Number</th>
+      <th>Flight Date</th>
+      <th>Class</th>
+      <th>Capacity</th>
       <th>Customer ID</th>
       <th>Date</th>
-      <th>Flight Date</th>
       <th>Action</th>
-      <th>Class</th>
       <th>Row</th>
       <th>Seat</th>
       <th>Total Seats booked over time</th>
-      <th>Capacity</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
       <td>PA001</td>
-      <td>72</td>
-      <td>2023-12-25</td>
       <td>2024-03-05</td>
-      <td>Booked</td>
       <td>First</td>
+      <td>32</td>
+      <td>72.0</td>
+      <td>2023-12-25</td>
+      <td>Booked</td>
       <td>8.0</td>
       <td>2.0</td>
-      <td>1</td>
-      <td>32</td>
+      <td>1.0</td>
     </tr>
     <tr>
       <th>1</th>
       <td>PA001</td>
-      <td>82</td>
-      <td>2024-01-31</td>
       <td>2024-03-05</td>
-      <td>Booked</td>
       <td>First</td>
+      <td>32</td>
+      <td>82.0</td>
+      <td>2024-01-31</td>
+      <td>Booked</td>
       <td>5.0</td>
       <td>2.0</td>
-      <td>2</td>
-      <td>32</td>
+      <td>2.0</td>
     </tr>
     <tr>
       <th>2</th>
       <td>PA001</td>
-      <td>190</td>
-      <td>2024-02-28</td>
       <td>2024-03-05</td>
-      <td>Seat Changed</td>
       <td>First</td>
+      <td>32</td>
+      <td>190.0</td>
+      <td>2024-02-28</td>
+      <td>Seat Changed</td>
       <td>3.0</td>
       <td>4.0</td>
-      <td>3</td>
-      <td>32</td>
+      <td>3.0</td>
     </tr>
     <tr>
       <th>3</th>
       <td>PA001</td>
-      <td>228</td>
-      <td>2024-01-02</td>
       <td>2024-03-05</td>
-      <td>Upgraded</td>
       <td>First</td>
+      <td>32</td>
+      <td>228.0</td>
+      <td>2024-01-02</td>
+      <td>Upgraded</td>
       <td>7.0</td>
       <td>2.0</td>
-      <td>4</td>
-      <td>32</td>
+      <td>4.0</td>
     </tr>
     <tr>
       <th>4</th>
       <td>PA001</td>
-      <td>330</td>
-      <td>2024-02-13</td>
       <td>2024-03-05</td>
+      <td>First</td>
+      <td>32</td>
+      <td>1914.0</td>
+      <td>2024-03-01</td>
       <td>Seat Changed</td>
-      <td>Business</td>
-      <td>9.0</td>
-      <td>1.0</td>
-      <td>1</td>
-      <td>40</td>
+      <td>5.0</td>
+      <td>2.0</td>
+      <td>5.0</td>
     </tr>
   </tbody>
 </table>
@@ -689,12 +701,21 @@ customers_recent.head()
 
 
 ```python
-customers_recent['Capacity %'] = customers_recent['Total Seats booked over time'] / customers_recent.Capacity
+
 ```
 
 
 ```python
-customers_recent.head()
+final_df['Capacity %'] = final_df['Total Seats booked over time'] / final_df.Capacity
+
+final_df['Capacity %'] = final_df['Capacity %'].fillna(0)
+final_df['Date'] = final_df['Date'].fillna(pd.to_datetime('2024-02-28'))  # Set Date to 28/02/2024
+final_df['Total Seats booked over time'] = final_df['Total Seats booked over time'].fillna(0)  # Set Total Seats to 0
+```
+
+
+```python
+final_df.head()
 ```
 
 
@@ -719,15 +740,15 @@ customers_recent.head()
     <tr style="text-align: right;">
       <th></th>
       <th>Flight Number</th>
+      <th>Flight Date</th>
+      <th>Class</th>
+      <th>Capacity</th>
       <th>Customer ID</th>
       <th>Date</th>
-      <th>Flight Date</th>
       <th>Action</th>
-      <th>Class</th>
       <th>Row</th>
       <th>Seat</th>
       <th>Total Seats booked over time</th>
-      <th>Capacity</th>
       <th>Capacity %</th>
     </tr>
   </thead>
@@ -735,75 +756,100 @@ customers_recent.head()
     <tr>
       <th>0</th>
       <td>PA001</td>
-      <td>72</td>
-      <td>2023-12-25</td>
       <td>2024-03-05</td>
-      <td>Booked</td>
       <td>First</td>
+      <td>32</td>
+      <td>72.0</td>
+      <td>2023-12-25</td>
+      <td>Booked</td>
       <td>8.0</td>
       <td>2.0</td>
-      <td>1</td>
-      <td>32</td>
+      <td>1.0</td>
       <td>0.03125</td>
     </tr>
     <tr>
       <th>1</th>
       <td>PA001</td>
-      <td>82</td>
-      <td>2024-01-31</td>
       <td>2024-03-05</td>
-      <td>Booked</td>
       <td>First</td>
+      <td>32</td>
+      <td>82.0</td>
+      <td>2024-01-31</td>
+      <td>Booked</td>
       <td>5.0</td>
       <td>2.0</td>
-      <td>2</td>
-      <td>32</td>
+      <td>2.0</td>
       <td>0.06250</td>
     </tr>
     <tr>
       <th>2</th>
       <td>PA001</td>
-      <td>190</td>
-      <td>2024-02-28</td>
       <td>2024-03-05</td>
-      <td>Seat Changed</td>
       <td>First</td>
+      <td>32</td>
+      <td>190.0</td>
+      <td>2024-02-28</td>
+      <td>Seat Changed</td>
       <td>3.0</td>
       <td>4.0</td>
-      <td>3</td>
-      <td>32</td>
+      <td>3.0</td>
       <td>0.09375</td>
     </tr>
     <tr>
       <th>3</th>
       <td>PA001</td>
-      <td>228</td>
-      <td>2024-01-02</td>
       <td>2024-03-05</td>
-      <td>Upgraded</td>
       <td>First</td>
+      <td>32</td>
+      <td>228.0</td>
+      <td>2024-01-02</td>
+      <td>Upgraded</td>
       <td>7.0</td>
       <td>2.0</td>
-      <td>4</td>
-      <td>32</td>
+      <td>4.0</td>
       <td>0.12500</td>
     </tr>
     <tr>
       <th>4</th>
       <td>PA001</td>
-      <td>330</td>
-      <td>2024-02-13</td>
       <td>2024-03-05</td>
+      <td>First</td>
+      <td>32</td>
+      <td>1914.0</td>
+      <td>2024-03-01</td>
       <td>Seat Changed</td>
-      <td>Business</td>
-      <td>9.0</td>
-      <td>1.0</td>
-      <td>1</td>
-      <td>40</td>
-      <td>0.02500</td>
+      <td>5.0</td>
+      <td>2.0</td>
+      <td>5.0</td>
+      <td>0.15625</td>
     </tr>
   </tbody>
 </table>
 </div>
 
 
+
+
+```python
+final_df.info()
+```
+
+    <class 'pandas.core.frame.DataFrame'>
+    RangeIndex: 500 entries, 0 to 499
+    Data columns (total 11 columns):
+     #   Column                        Non-Null Count  Dtype         
+    ---  ------                        --------------  -----         
+     0   Flight Number                 500 non-null    object        
+     1   Flight Date                   500 non-null    datetime64[ns]
+     2   Class                         500 non-null    object        
+     3   Capacity                      500 non-null    int64         
+     4   Customer ID                   491 non-null    float64       
+     5   Date                          500 non-null    datetime64[ns]
+     6   Action                        491 non-null    object        
+     7   Row                           491 non-null    float64       
+     8   Seat                          491 non-null    float64       
+     9   Total Seats booked over time  500 non-null    float64       
+     10  Capacity %                    500 non-null    float64       
+    dtypes: datetime64[ns](2), float64(5), int64(1), object(3)
+    memory usage: 43.1+ KB
+    
