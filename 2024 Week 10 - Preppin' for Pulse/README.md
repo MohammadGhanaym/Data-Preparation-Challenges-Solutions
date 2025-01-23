@@ -580,3 +580,383 @@ loyalty.Customer_Name
     Name: Customer_Name, Length: 9789, dtype: object
 
 
+
+
+```python
+loyalty_tier = {
+    'G': 'Gold',
+    'S': 'Silver',
+    'B': 'Bronze'
+}
+loyalty_tier_fixed = loyalty.Loyalty_Tier.dropna().apply(lambda x:loyalty_tier.get(x.upper()[0], x))
+```
+
+
+```python
+loyalty.loc[loyalty_tier_fixed.index, 'Loyalty_Tier'] = loyalty_tier_fixed.values
+```
+
+
+```python
+loyalty.Loyalty_Tier.value_counts()
+```
+
+
+
+
+    Loyalty_Tier
+    Bronze    5256
+    Silver    2221
+    Gold       513
+    Name: count, dtype: int64
+
+
+
+
+```python
+loyalty.Loyalty_Discount = loyalty.Loyalty_Discount.str.strip('%').astype('float') / 100
+```
+
+
+```python
+loyalty.Loyalty_Discount.value_counts()
+```
+
+
+
+
+    Loyalty_Discount
+    0.05    4721
+    0.10    2221
+    0.15     513
+    Name: count, dtype: int64
+
+
+
+#### Join the Loyalty Table
+
+
+```python
+df = df.merge(right=loyalty, on='Loyalty_Number', how='left')
+df.head()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Transaction_Date</th>
+      <th>Transanction_Number</th>
+      <th>Product_Type</th>
+      <th>Product_Scent</th>
+      <th>Product_Size</th>
+      <th>Cash_or_Card</th>
+      <th>Loyalty_Number</th>
+      <th>Sales_Before_Discount</th>
+      <th>Unit_Cost</th>
+      <th>Selling_Price</th>
+      <th>Transaction_Quantity</th>
+      <th>Customer_Name</th>
+      <th>Loyalty_Tier</th>
+      <th>Loyalty_Discount</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2023-01-03</td>
+      <td>30123001.0</td>
+      <td>Liquid</td>
+      <td>Sandalwood Spice</td>
+      <td>0.25L</td>
+      <td>Cash</td>
+      <td>1005245.0</td>
+      <td>8.50</td>
+      <td>2.45</td>
+      <td>4.25</td>
+      <td>2.0</td>
+      <td>Laurens Squibbs</td>
+      <td>Bronze</td>
+      <td>0.05</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2023-01-03</td>
+      <td>30123001.0</td>
+      <td>Liquid</td>
+      <td>Vanilla Bean</td>
+      <td>0.5L</td>
+      <td>Cash</td>
+      <td>1005245.0</td>
+      <td>14.70</td>
+      <td>5.97</td>
+      <td>7.35</td>
+      <td>2.0</td>
+      <td>Laurens Squibbs</td>
+      <td>Bronze</td>
+      <td>0.05</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2023-01-03</td>
+      <td>30123002.0</td>
+      <td>Liquid</td>
+      <td>Sandalwood Spice</td>
+      <td>1L</td>
+      <td>Card</td>
+      <td>1007270.0</td>
+      <td>13.19</td>
+      <td>9.67</td>
+      <td>13.19</td>
+      <td>1.0</td>
+      <td>Cary Breckon</td>
+      <td>Bronze</td>
+      <td>0.05</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2023-01-03</td>
+      <td>30123003.0</td>
+      <td>Liquid</td>
+      <td>Eucalyptus Mint</td>
+      <td>0.25L</td>
+      <td>Cash</td>
+      <td>1009750.0</td>
+      <td>9.00</td>
+      <td>2.27</td>
+      <td>4.50</td>
+      <td>2.0</td>
+      <td>Orv Drewitt</td>
+      <td>Bronze</td>
+      <td>0.05</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2023-01-03</td>
+      <td>30123003.0</td>
+      <td>Liquid</td>
+      <td>Eucalyptus Mint</td>
+      <td>1L</td>
+      <td>Cash</td>
+      <td>1009750.0</td>
+      <td>39.81</td>
+      <td>8.96</td>
+      <td>13.27</td>
+      <td>3.0</td>
+      <td>Orv Drewitt</td>
+      <td>Bronze</td>
+      <td>0.05</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+#### Create a Sales_After_Discount field to apply the Loyalty_Discount for transactions with a Loyalty_Number
+
+
+```python
+df['Sales_After_Discount'] = df['Sales_Before_Discount'] * (1 - df['Loyalty_Discount'])
+```
+
+#### Calculate the Profit, defined as:
+Sales_After_Discount - (Unit_Cost * Quantity)
+
+
+```python
+df['Profit'] = df['Sales_After_Discount'] - (df['Unit_Cost'] * df['Transaction_Quantity'])
+```
+
+#### Update the field names to remove all underscores and replace them with spaces
+
+
+```python
+df = df.rename(columns=lambda x:x.replace('_', ' '))
+```
+
+#### Remove any unnecessary fields
+
+
+```python
+df.drop(['Unit Cost', 'Selling Price'], axis=1, inplace=True)
+```
+
+
+```python
+df.info()
+```
+
+    <class 'pandas.core.frame.DataFrame'>
+    RangeIndex: 39337 entries, 0 to 39336
+    Data columns (total 14 columns):
+     #   Column                 Non-Null Count  Dtype         
+    ---  ------                 --------------  -----         
+     0   Transaction Date       39337 non-null  datetime64[ns]
+     1   Transanction Number    39267 non-null  float64       
+     2   Product Type           39267 non-null  object        
+     3   Product Scent          39267 non-null  object        
+     4   Product Size           39267 non-null  object        
+     5   Cash or Card           39267 non-null  object        
+     6   Loyalty Number         27518 non-null  float64       
+     7   Sales Before Discount  39267 non-null  float64       
+     8   Transaction Quantity   39267 non-null  float64       
+     9   Customer Name          27518 non-null  object        
+     10  Loyalty Tier           25518 non-null  object        
+     11  Loyalty Discount       24935 non-null  float64       
+     12  Sales After Discount   24935 non-null  float64       
+     13  Profit                 24935 non-null  float64       
+    dtypes: datetime64[ns](1), float64(7), object(6)
+    memory usage: 4.2+ MB
+    
+
+
+```python
+df.head()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Transaction Date</th>
+      <th>Transanction Number</th>
+      <th>Product Type</th>
+      <th>Product Scent</th>
+      <th>Product Size</th>
+      <th>Cash or Card</th>
+      <th>Loyalty Number</th>
+      <th>Sales Before Discount</th>
+      <th>Transaction Quantity</th>
+      <th>Customer Name</th>
+      <th>Loyalty Tier</th>
+      <th>Loyalty Discount</th>
+      <th>Sales After Discount</th>
+      <th>Profit</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2023-01-03</td>
+      <td>30123001.0</td>
+      <td>Liquid</td>
+      <td>Sandalwood Spice</td>
+      <td>0.25L</td>
+      <td>Cash</td>
+      <td>1005245.0</td>
+      <td>8.50</td>
+      <td>2.0</td>
+      <td>Laurens Squibbs</td>
+      <td>Bronze</td>
+      <td>0.05</td>
+      <td>8.0750</td>
+      <td>3.1750</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2023-01-03</td>
+      <td>30123001.0</td>
+      <td>Liquid</td>
+      <td>Vanilla Bean</td>
+      <td>0.5L</td>
+      <td>Cash</td>
+      <td>1005245.0</td>
+      <td>14.70</td>
+      <td>2.0</td>
+      <td>Laurens Squibbs</td>
+      <td>Bronze</td>
+      <td>0.05</td>
+      <td>13.9650</td>
+      <td>2.0250</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2023-01-03</td>
+      <td>30123002.0</td>
+      <td>Liquid</td>
+      <td>Sandalwood Spice</td>
+      <td>1L</td>
+      <td>Card</td>
+      <td>1007270.0</td>
+      <td>13.19</td>
+      <td>1.0</td>
+      <td>Cary Breckon</td>
+      <td>Bronze</td>
+      <td>0.05</td>
+      <td>12.5305</td>
+      <td>2.8605</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2023-01-03</td>
+      <td>30123003.0</td>
+      <td>Liquid</td>
+      <td>Eucalyptus Mint</td>
+      <td>0.25L</td>
+      <td>Cash</td>
+      <td>1009750.0</td>
+      <td>9.00</td>
+      <td>2.0</td>
+      <td>Orv Drewitt</td>
+      <td>Bronze</td>
+      <td>0.05</td>
+      <td>8.5500</td>
+      <td>4.0100</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2023-01-03</td>
+      <td>30123003.0</td>
+      <td>Liquid</td>
+      <td>Eucalyptus Mint</td>
+      <td>1L</td>
+      <td>Cash</td>
+      <td>1009750.0</td>
+      <td>39.81</td>
+      <td>3.0</td>
+      <td>Orv Drewitt</td>
+      <td>Bronze</td>
+      <td>0.05</td>
+      <td>37.8195</td>
+      <td>10.9395</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
